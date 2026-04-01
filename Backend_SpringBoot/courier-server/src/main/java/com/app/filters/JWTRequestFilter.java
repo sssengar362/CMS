@@ -1,5 +1,7 @@
 package com.app.filters;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 
 import javax.servlet.FilterChain;
@@ -17,49 +19,49 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.app.jwt_utils.JwtUtils;
 
-import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 @Component
 public class JWTRequestFilter extends OncePerRequestFilter {
-	@Autowired
-	private JwtUtils utils;
-	@Autowired
-	private UserDetailsService userDetailsService;
 
-	@Override
-	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-			throws ServletException, IOException {
-		log.info("in once per request filter");
-		// get authorization header n check if not null n starting with Bearer
-		String header = request.getHeader("Authorization");
-		if (header != null && header.startsWith("Bearer ")) {
-			// Bearer token present --> extract n validate it
-			String token = header.substring(7);
-			if (utils.validateJwtToken(token)) {
-				// valid token --> extract user name from the token
-				String userName = utils.getUserNameFromJwtToken(token);
-				
-				if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-					// load user details from UserDetailsService
-					UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
-					// create Authentication object , wrapping user details lifted from DB
-					UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-							userDetails.getUsername(), userDetails.getPassword(), userDetails.getAuthorities());
-					//set details in auth object
-		//			authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-//					Save this authentication token in the sec ctx.
-					SecurityContextHolder.getContext().setAuthentication(authentication);
-				}
-				else
-					log.info("user name null or authentication already set , username {}",userName);
+    @Autowired
+    private JwtUtils utils; // Utility class for handling JWT operations
 
-			}
-		} else
-			log.error("Request header DOES NOT contain a Bearer Token");
-		//pass the request to the next filter in the chain
-		filterChain.doFilter(request, response);
+    @Autowired
+    private UserDetailsService userDetailsService; // Service to load user details
 
-	}
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        log.info("In once per request filter");
 
+        // Get the Authorization header and check if it starts with "Bearer "
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            // Extract and validate the JWT token
+            String token = header.substring(7); // Remove "Bearer " prefix
+            if (utils.validateJwtToken(token)) {
+                // Extract username from the token
+                String userName = utils.getUserNameFromJwtToken(token);
+
+                if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    // Load user details from UserDetailsService
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
+                    // Create Authentication object
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails.getUsername(), userDetails.getPassword(), userDetails.getAuthorities());
+                    // Save the authentication token in the Security Context
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    log.info("User name null or authentication already set, username {}", userName);
+                }
+            } else {
+                log.error("Invalid JWT token: {}", token);
+            }
+        } else {
+            log.error("Request header DOES NOT contain a Bearer Token");
+        }
+
+        // Pass the request to the next filter in the chain
+        filterChain.doFilter(request, response);
+    }
 }

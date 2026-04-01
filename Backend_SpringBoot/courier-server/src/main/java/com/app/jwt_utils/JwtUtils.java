@@ -25,7 +25,7 @@ public class JwtUtils {
 	// will be invoked by REST Controller(authentication controller) , upon
 	// successful authentication
 	public String generateJwtToken(Authentication authentication) {
-		log.info("generate jwt token " + authentication);
+//		log.info("generate jwt token " + authentication);
 		CustomUserDetails userPrincipal = (CustomUserDetails) authentication.getPrincipal();
 //JWT : userName,issued at ,exp date,digital signature(does not typically contain password , can contain authorities
 		return Jwts.builder() // JWTs : a Factory class , used to create JWT tokens
@@ -56,7 +56,7 @@ public class JwtUtils {
 												// throws exc in case of failures in verification
 			return true;
 		} catch (Exception e) {
-			log.error("Invalid JWT : " + e.getMessage());
+//			log.error("Invalid JWT : " + e.getMessage());
 		}
 
 		return false;
